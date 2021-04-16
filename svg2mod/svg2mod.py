@@ -22,11 +22,12 @@ This currently supports both the pretty format and
 the legacy mod format.
 '''
 
-from abc import ABC, abstractmethod
-from typing import List, Tuple
+from __future__ import absolute_import
+
+#from abc import ABC, abstractmethod
+#from typing import List, Tuple
 import argparse
 import datetime
-import shlex
 import os
 import sys
 import re
@@ -34,9 +35,14 @@ import io
 import time
 import logging
 
+
 import svg2mod.svg as svg
 import svg2mod.coloredlogger as coloredlogger
 
+try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
 
 #----------------------------------------------------------------------------
 DEFAULT_DPI = 96 # 96 as of Inkscape 0.92
@@ -74,9 +80,9 @@ def main():
         fonts = svg.Text.load_system_fonts()
         logging.getLogger("unfiltered").info("Font Name: list of supported styles.")
         for font in fonts:
-            fnt_text = f"  {font}:"
+            fnt_text = "  {}:".format(font)
             for styles in fonts[font]:
-                fnt_text += f" {styles},"
+                fnt_text += " {},".format(styles)
             fnt_text = fnt_text.strip(",")
             logging.getLogger("unfiltered").info(fnt_text)
         sys.exit(0)
@@ -167,7 +173,7 @@ def main():
             )
 
     args = [os.path.basename(sys.argv[0])] + sys.argv[1:]
-    cmdline = ' '.join(shlex.quote(x) for x in args)
+    cmdline = ' '.join([quote(x) for x in args])
 
     # Export the footprint:
     exported.write(cmdline)
@@ -231,9 +237,9 @@ class LineSegment:
 
     #------------------------------------------------------------------------
 
-    def connects( self, segment: 'LineSegment' ) -> bool:
+    def connects( self, segment):
         ''' Return true if provided segment shares
-        endpoints with the current segment
+        endpoints with the current segment else false
         '''
 
         if self.q == segment.p: return True
@@ -245,7 +251,7 @@ class LineSegment:
 
     #------------------------------------------------------------------------
 
-    def intersects( self, segment: 'LineSegment' ) -> bool:
+    def intersects( self, segment ):
         """ Return true if line segments 'p1q1' and 'p2q2' intersect.
             Adapted from:
               http://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
@@ -286,9 +292,10 @@ class LineSegment:
 
     #------------------------------------------------------------------------
 
-    def q_next( self, q:svg.Point ):
+    def q_next( self, q):
         '''Shift segment endpoints so self.q is self.p
         and q is the new self.q
+        q is type svg.Point
         '''
 
         self.p = self.q
@@ -321,7 +328,7 @@ class PolygonSegment:
 
     #------------------------------------------------------------------------
 
-    def __init__( self, points:List, ndigits=10):
+    def __init__( self, points, ndigits=10):
 
         self.points = [points.pop(0).round(ndigits)]
 
@@ -337,7 +344,7 @@ class PolygonSegment:
 
     #------------------------------------------------------------------------
 
-    def _find_insertion_point( self, hole: 'PolygonSegment', holes: list, other_insertions: list ):
+    def _find_insertion_point( self, hole, holes, other_insertions ):
         ''' KiCad will not "pick up the pen" when moving between a polygon outline
         and holes within it, so we search for a pair of points connecting the
         outline (self) or other previously inserted points to the hole such
@@ -419,7 +426,7 @@ class PolygonSegment:
 
     #------------------------------------------------------------------------
 
-    def points_starting_on_index( self, index: int ) -> List[svg.Point]:
+    def points_starting_on_index( self, index ):
         ''' Return the list of ordered points starting on the given index, ensuring
         that the first and last points are the same.
         '''
@@ -442,7 +449,7 @@ class PolygonSegment:
 
     #------------------------------------------------------------------------
 
-    def inline( self, segments: List[svg.Point] ) -> List[svg.Point]:
+    def inline( self, segments ):
         ''' Return a list of points with the given polygon segments (paths) inlined. '''
 
         if len( segments ) < 1:
@@ -485,7 +492,7 @@ class PolygonSegment:
 
     #------------------------------------------------------------------------
 
-    def intersects( self, line_segment: LineSegment, check_connects:bool , count_intersections=False, get_points=False):
+    def intersects( self, line_segment, check_connects, count_intersections=False, get_points=False):
         '''Check to see if line_segment intersects with any
         segments of the polygon. Default return True/False
 
@@ -576,7 +583,7 @@ class PolygonSegment:
 
     #------------------------------------------------------------------------
 
-    def calc_bbox(self) -> Tuple[svg.Point, svg.Point]:
+    def calc_bbox(self):
         '''Calculate bounding box of self'''
         self.bbox =  (
             svg.Point(min(self.points, key=lambda v: v.x).x, min(self.points, key=lambda v: v.y).y),
@@ -657,7 +664,7 @@ class Svg2ModImport:
 
 #----------------------------------------------------------------------------
 
-class Svg2ModExport(ABC):
+class Svg2ModExport():
     ''' An abstract class to provide functionality
     to write to kicad module file.
     The abstract methods are the file type specific
@@ -665,42 +672,42 @@ class Svg2ModExport(ABC):
     '''
 
     @property
-    @abstractmethod
+    #@abstractmethod
     def layer_map(self ):
         ''' This should be overwritten by a dictionary object of layer maps '''
         pass
 
-    @abstractmethod
+    #@abstractmethod
     def _get_layer_name( self, name, front ):pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_library_intro( self, cmdline ): pass
 
-    @abstractmethod
+    #@abstractmethod
     def _get_module_name( self, front = None ): pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_module_header( self, label_size, label_pen, reference_y, value_y, front,): pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_modules( self ): pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_module_footer( self, front ):pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_polygon_header( self, points, layer ):pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_polygon( self, points, layer, fill, stroke, stroke_width ):pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_polygon_footer( self, layer, stroke_width ):pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_polygon_point( self, point ):pass
 
-    @abstractmethod
+    #@abstractmethod
     def _write_polygon_segment( self, p, q, layer, stroke_width ):pass
 
     #------------------------------------------------------------------------
@@ -799,7 +806,7 @@ class Svg2ModExport(ABC):
 
     #------------------------------------------------------------------------
 
-    def add_svg_element(self, elem : svg.Transformable, layer="F.SilkS"):
+    def add_svg_element(self, elem , layer="F.SilkS"):
         ''' This can be used to add a svg element
         to a specific layer.
         If the importer doesn't have a svg element

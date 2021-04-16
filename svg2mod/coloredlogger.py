@@ -36,7 +36,8 @@ class Formatter(logging.Formatter):
     reset = "\033[0m" # Reset the terminal back to default color/emphasis
 
     def __init__(self, fmt="%(message)s", datefmt=None, style="%"):
-        super().__init__(fmt, datefmt, style)
+        #super(logging.Formatter, self).__init__(fmt, datefmt, style)
+        logging.Formatter.__init__(self, fmt)
 
     def format(self, record):
         '''Overwrite the format function.
@@ -44,11 +45,24 @@ class Formatter(logging.Formatter):
         color, sends the message to the super.format, and
         finally returns the style to the original format
         '''
-        fmt_org = self._style._fmt
-        self._style._fmt = Formatter.color[record.levelno] + fmt_org + Formatter.reset
-        result = logging.Formatter.format(self, record)
-        self._style._fmt = fmt_org
+        try:
+            fmt_org = self._style._fmt
+            self._style._fmt = Formatter.color[record.levelno] + fmt_org + Formatter.reset
+            result = logging.Formatter.format(self, record)
+            self._style._fmt = fmt_org
+        except:
+            fmt_org = self._fmt
+            self._fmt = Formatter.color[record.levelno] + fmt_org + Formatter.reset
+            result = logging.Formatter.format(self, record)
+            self._fmt = fmt_org
+
         return result
+
+class StdOutFilter(logging.Filter):
+    def __init__(self, filter_func):
+        super(logging.Filter, self).__init__()
+        self.filter = filter_func
+    
 
 def split_logger(logger, formatter=Formatter(), brkpoint=logging.WARNING):
     '''This will split logging messages at the specified break point. Anything higher
@@ -56,10 +70,10 @@ def split_logger(logger, formatter=Formatter(), brkpoint=logging.WARNING):
     '''
 
     hdlrerr = logging.StreamHandler(sys.stderr)
-    hdlrerr.addFilter(lambda msg: brkpoint <= msg.levelno)
+    hdlrerr.addFilter(StdOutFilter(lambda msg: brkpoint <= msg.levelno))
 
     hdlrout = logging.StreamHandler(sys.stdout)
-    hdlrout.addFilter(lambda msg: brkpoint > msg.levelno)
+    hdlrout.addFilter(StdOutFilter(lambda msg: brkpoint > msg.levelno))
 
     hdlrerr.setFormatter(formatter)
     hdlrout.setFormatter(formatter)
