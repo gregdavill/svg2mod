@@ -664,7 +664,7 @@ class Svg2ModImport:
 
 #----------------------------------------------------------------------------
 
-class Svg2ModExport():
+class Svg2ModExport(object):
     ''' An abstract class to provide functionality
     to write to kicad module file.
     The abstract methods are the file type specific
@@ -1065,7 +1065,7 @@ class Svg2ModExport():
             logging.getLogger("unfiltered").info( "Writing module file: {}".format( self.file_name ) )
             self.output_file = open( self.file_name, 'w' )
         else:
-            self.output_file = io.StringIO()
+            self.output_file = io.BytesIO()
 
         self._write_library_intro(cmdline)
 
