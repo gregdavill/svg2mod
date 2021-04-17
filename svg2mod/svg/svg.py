@@ -1245,18 +1245,18 @@ class Text(Transformable):
             for char in text:
 
                 pathbuf = ""
+
                 try: glf = ttf.getGlyphSet()[ttf.getBestCmap()[ord(char)]]
                 except KeyError:
                     logging.warning("Unsuported character in <text> element \"{}\"".format(char))
                     #txt = txt.replace(char, "")
                     continue
 
-                pen = SVGPathPen(glf)
+                pen = SVGPathPen(ttf.getGlyphSet())
                 glf.draw(pen)
                 
                 for cmd in pen._commands:
                     pathbuf += cmd + ' '
-
 
                 if len(pathbuf) > 0:
                     path.append(Path())
