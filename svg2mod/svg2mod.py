@@ -1065,7 +1065,10 @@ class Svg2ModExport(object):
             logging.getLogger("unfiltered").info( "Writing module file: {}".format( self.file_name ) )
             self.output_file = open( self.file_name, 'w' )
         else:
-            self.output_file = io.BytesIO()
+            if sys.version_info.major == 2:
+                self.output_file = io.BytesIO()
+            else:
+                self.output_file = io.StringIO()
 
         self._write_library_intro(cmdline)
 
