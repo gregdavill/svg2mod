@@ -610,7 +610,9 @@ class PolygonSegment:
         # Check number of horizontal intersections. If the number is odd then it the smaller polygon
         # is contained. If the number is even then the polygon is outside of the larger polygon
         if not distinct:
-            tline = LineSegment(smaller.points[0], svg.Point(larger.bbox[1].x, smaller.points[0].y))
+            tline = LineSegment(
+                svg.Point(smaller.points[0].x, smaller.points[0].y+0.0000001),
+                svg.Point(larger.bbox[1].x,    smaller.points[0].y+0.0000001))
             distinct = bool((larger.intersects(tline, False, True) + 1)%2)
 
         return distinct
@@ -1897,5 +1899,6 @@ def get_arguments():
 if __name__ == "__main__":
     main()
 
+logging.root.setLevel(logging.DEBUG)
 
 #----------------------------------------------------------------------------
